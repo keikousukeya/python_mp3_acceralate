@@ -48,6 +48,14 @@ pip install -r requirements_min.txt
 
 ## 使い方
 
+### GUI で起動
+
+```powershell
+python .\mp3_test.py --gui
+```
+
+引数なしで `python .\mp3_test.py` を実行しても GUI が開きます。
+
 ### 基本実行
 
 ```powershell
@@ -111,6 +119,8 @@ pyinstaller build_config.spec
 - `dist/mp3_test/mp3_test.exe`
 
 配布時は `ffmpeg.exe` と `ffprobe.exe` の同梱が必要です。
+
+GUI を使う場合は、exe を起動するとウィンドウで入力ファイル・出力先・モデル・言語・デバイスを選べます。
 
 ## トラブルシュート
 
