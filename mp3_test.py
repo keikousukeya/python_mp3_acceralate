@@ -35,6 +35,19 @@ def get_runtime_base_dir() -> Path:
     return Path(__file__).resolve().parent
 
 
+def find_default_input_mp3() -> Path | None:
+    candidates = [
+        Path.cwd() / "sample02.mp3",
+        Path(sys.executable).resolve().parent / "sample02.mp3",
+        get_runtime_base_dir() / "sample02.mp3",
+        Path(__file__).resolve().parent / "sample02.mp3",
+    ]
+    for candidate in dict.fromkeys(candidates):
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def resolve_tool_path(tool_name: str, search_dirs: list[Path] | None = None) -> str | None:
     if search_dirs:
         for base in search_dirs:
@@ -123,8 +136,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input",
         type=Path,
-        default=Path(__file__).resolve().parent / "sample02.mp3",
-        help="入力MP3ファイル",
+        default=None,
+        help="入力MP3ファイル（未指定時は sample02.mp3 を自動探索）",
     )
     parser.add_argument(
         "--output-dir",
@@ -312,7 +325,8 @@ def launch_gui() -> None:
     root.geometry("780x580")
     root.minsize(740, 540)
 
-    input_path_var = tk.StringVar(value=str(Path(__file__).resolve().parent / "sample02.mp3"))
+    default_input = find_default_input_mp3()
+    input_path_var = tk.StringVar(value=str(default_input) if default_input else "")
     output_dir_var = tk.StringVar(value="")
     model_var = tk.StringVar(value="medium")
     language_var = tk.StringVar(value="ja")
@@ -538,9 +552,24 @@ def launch_gui() -> None:
 
 def main() -> None:
     args = parse_args()
-    if args.gui or len(sys.argv) == 1:
+
+    # In packaged apps, no-input startup should open GUI instead of failing on missing sample files.
+    if args.gui or (getattr(sys, "frozen", False) and args.input is None):
         launch_gui()
         return
+
+    if len(sys.argv) == 1:
+        launch_gui()
+        return
+
+    if args.input is None:
+        default_input = find_default_input_mp3()
+        if default_input is None:
+            raise FileNotFoundError(
+                "入力MP3が指定されておらず、sample02.mp3 も見つかりません。"
+                " --input でファイルを指定してください。"
+            )
+        args.input = default_input
 
     process_audio(
         mp3_path=args.input,
